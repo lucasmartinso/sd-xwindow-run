@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sd-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sd-runner
+  template:
+    metadata:
+      labels:
+        app: sd-runner
+    spec:
+      containers:
+        - name: sd-studio
+          image: ghcr.io/tabiahealth/sd-runner:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 6080
+          env:
+            - name: GEOMETRY
+              value: "1280x800x24"
+            - name: STATE_DIR
+              value: "/app/state"
+            - name: VNC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sd-runner-secrets
+                  key: vnc-password
+          volumeMounts:
+            - name: state
+              mountPath: /app/state
+          resources:
+            limits:
+              memory: 1Gi
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: sd-runner-state
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sd-runner
+spec:
+  selector:
+    app: sd-runner
+  ports:
+    - port: 6080
+      targetPort: 6080
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sd-runner-state
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

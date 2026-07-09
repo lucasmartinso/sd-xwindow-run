@@ -1,0 +1,24 @@
+services:
+  sd-studio:
+    image: ghcr.io/tabiahealth/sd-runner:latest   # push via tools/build-image.sh
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "6080:6080"
+    environment:
+      GEOMETRY: 1280x800x24
+      STATE_DIR: /app/state
+      # Hardening: require a VNC password. Type the master passphrase via noVNC (no auto-unlock).
+      VNC_PASSWORD: ${VNC_PASSWORD:?set VNC_PASSWORD}
+      # Optional TLS for noVNC: mount a cert and point CERT_FILE at it.
+      # CERT_FILE: /certs/novnc.pem
+    volumes:
+      - app-state:/app/state
+      # - ./certs/novnc.pem:/certs/novnc.pem:ro
+      # NOTE: docker.sock is intentionally NOT mounted in prod (DooD is unsafe).
+      # Use VM mode (SD_VM_LAUNCHER) to provision instead.
+    restart: unless-stopped
+
+volumes:
+  app-state:
