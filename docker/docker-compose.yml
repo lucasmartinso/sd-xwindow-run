@@ -10,6 +10,9 @@ services:
       STATE_DIR: /app/state
       # Demo/headless auto-unlock. In real use, omit this and type the passphrase via noVNC.
       SD_MASTER_PASSPHRASE: devpass
+      # "Novo ambiente MySQL": attach provisioned containers to THIS network so the app
+      # (running inside a container) can reach them by name (DNS) instead of 127.0.0.1.
+      SD_PROVISION_NETWORK: sdr-dev-net
     volumes:
       - app-state:/app/state
       # DooD: lets the app provision sibling MySQL containers via the host daemon.
@@ -31,3 +34,9 @@ services:
 volumes:
   app-state:
   mysql-data:
+
+# Fixed network name (independent of the compose project name) so the provisioner can
+# attach sibling MySQL containers to it via SD_PROVISION_NETWORK.
+networks:
+  default:
+    name: sdr-dev-net

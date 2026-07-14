@@ -153,6 +153,7 @@ Sem `SD_MASTER_PASSPHRASE`, a app abre o diálogo de passphrase mestra
 | Variável | Efeito |
 |----------|--------|
 | `SD_IT_DOCKER=1` | Habilita o teste de integração do provisionador Docker |
+| `SD_PROVISION_NETWORK` | Rede Docker à qual anexar ambientes provisionados (necessária quando a app roda dentro de um container, como na GUI de DEV). No host (CLI) deixe **sem** definir: usa `127.0.0.1` + porta publicada |
 | `SD_VM_LAUNCHER` / `SD_VM_STOP` / `SD_VM_REMOVE` / `SD_VM_STATUS` | Comandos do modo VM |
 | `SD_IMAGE_REPO` | Registry/repositório da imagem no `build-image.sh` |
 | `SD_MASTER_PASSPHRASE` | Auto-desbloqueia o store (headless/demo) |

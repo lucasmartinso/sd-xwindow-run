@@ -125,6 +125,7 @@ então seus perfis e dados de teste continuam lá no próximo `make up`.
 | "Falha: Communications link failure" | Host/porta errados | Use `mysql` / `3306` (rede interna), não `localhost/3307` |
 | Tela cinza no noVNC | X ainda inicializando | Aguarde e recarregue; a app sobe após Xvfb → x11vnc → noVNC |
 | Perfil sumiu | Volume removido | Não use `down -v`; os perfis vivem no volume `app-state` |
+| "Passphrase incorreta." e a app fecha | O `app-state` guarda um store criado com **outra** passphrase (ex.: run anterior em PROD ou com outro `SD_MASTER_PASSPHRASE`); o `make down` **preserva** volumes | Para recomeçar do zero, apague o store: `docker compose -f docker/docker-compose.yml down -v` e suba de novo com `make up` (⚠️ isso também apaga perfis e dados de teste) |
 
 ## Próximos passos
 

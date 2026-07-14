@@ -84,7 +84,7 @@ Na stack de DEV, no painel **Conexões**, clique em **Novo ambiente MySQL** e pr
 
 | Campo | Padrão | Observação |
 |-------|--------|------------|
-| Nome | `dev` | vira nome do container (`sdr-env-<nome>`) e do volume (`sdr-<nome>-data`) |
+| Nome | `dev` | vira nome do container (`sdr-env-<nome>`) e do volume (`sdr-<nome>-data`) — use um nome **ainda não usado** (ver aviso abaixo) |
 | Versão MySQL | `8` | tag da imagem `mysql` |
 | Database | `app` | database inicial criado |
 | Senha root | `dev` | senha do root do novo MySQL |
@@ -100,6 +100,20 @@ Clique em **Provisionar**. A app (em background):
 
 O novo perfil aparece na lista. Selecione, **Conectar** e rode um `SELECT * FROM users`
 para conferir o seed.
+
+> **Como a app alcança o banco provisionado.** A app roda **dentro** de um container e
+> cria o MySQL pelo daemon do host (DooD). Uma porta publicada no host **não** é
+> acessível por `127.0.0.1` de dentro do container. Por isso a stack de DEV define
+> `SD_PROVISION_NETWORK: sdr-dev-net` (ver `docker-compose.yml`): o container novo é
+> anexado a essa rede e a app fala com ele pelo **nome** (`sdr-env-<nome>:3306`) via DNS
+> do Docker — o perfil salvo já nasce com esse endereço. A porta continua publicada no
+> host também, então você pode acessar o mesmo banco pela sua máquina se quiser.
+>
+> **Nome já em uso.** O nome vira o do container (`sdr-env-<nome>`). Se já existir um
+> container com esse nome (inclusive **parado**, de um teste anterior), o provisionamento
+> falha com *"Falha ao provisionar: docker run failed: ... Conflict. The container name
+> ... is already in use"*. Use um nome novo, ou remova o antigo:
+> `docker rm -f sdr-env-<nome> && docker volume rm sdr-<nome>-data`.
 
 ## 5. Histórico e persistência
 
@@ -129,6 +143,7 @@ Recrie o container (`make up`) e recarregue o noVNC.
 | Variável | Efeito |
 |----------|--------|
 | `SD_MASTER_PASSPHRASE` | Auto-desbloqueia o store (só DEV/demo). Em PROD, **não** definir. |
+| `SD_PROVISION_NETWORK` | Rede Docker à qual anexar os ambientes provisionados; a app os alcança pelo nome do container na porta `3306`. Sem ela (ex.: CLI no host), usa `127.0.0.1` + porta publicada. |
 | `VNC_PASSWORD` | Habilita senha no x11vnc/noVNC (obrigatória no compose de PROD). |
 | `CERT_FILE` | Se definido, o noVNC serve sobre TLS (wss). |
 | `GEOMETRY` | Resolução do Xvfb (padrão `1280x800x24`). |

@@ -36,6 +36,14 @@ public class DockerMysqlProvisioner implements MysqlProvisioner {
         int port = spec.hostPort() > 0 ? spec.hostPort() : freePort();
         String image = "mysql:" + spec.mysqlVersion();
 
+        // When we run inside a container (DooD), the port we publish below lands on the
+        // *host*, and 127.0.0.1 in our own network namespace does NOT reach it. If
+        // SD_PROVISION_NETWORK names a Docker network, attach the new container to it and
+        // reach it by container name on the internal port 3306 (Docker DNS). Unset (host
+        // CLI / IT) keeps the 127.0.0.1 + published-port path.
+        String network = System.getenv("SD_PROVISION_NETWORK");
+        boolean onSharedNetwork = network != null && !network.isBlank();
+
         run(true, "docker", "volume", "create", spec.volumeName());
 
         List<String> cmd = new ArrayList<>(List.of(
@@ -45,6 +53,10 @@ public class DockerMysqlProvisioner implements MysqlProvisioner {
                 "-e", "MYSQL_ROOT_PASSWORD=" + spec.rootPassword(),
                 "-p", port + ":3306",
                 "-v", spec.volumeName() + ":/var/lib/mysql"));
+        if (onSharedNetwork) {
+            cmd.add("--network");
+            cmd.add(network);
+        }
         if (spec.database() != null && !spec.database().isBlank()) {
             cmd.add("-e");
             cmd.add("MYSQL_DATABASE=" + spec.database());
@@ -56,10 +68,14 @@ public class DockerMysqlProvisioner implements MysqlProvisioner {
             throw new RuntimeException("docker run failed: " + r.output);
         }
         String containerId = r.output.trim();
-        log.info("Started {} ({}) on port {}", spec.containerName(), shortId(containerId), port);
+
+        String connectHost = onSharedNetwork ? spec.containerName() : "127.0.0.1";
+        int connectPort = onSharedNetwork ? 3306 : port;
+        log.info("Started {} ({}) — app connects via {}:{}, also published on host port {}",
+                spec.containerName(), shortId(containerId), connectHost, connectPort, port);
 
         ProvisionResult result = new ProvisionResult(
-                spec.name(), containerId, "127.0.0.1", port, spec.rootPassword(), spec.database());
+                spec.name(), containerId, connectHost, connectPort, spec.rootPassword(), spec.database());
 
         awaitReady(result, 120);
         if (spec.seedSql() != null && !spec.seedSql().isBlank()) {
